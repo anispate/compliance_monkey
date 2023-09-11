@@ -24,8 +24,13 @@ func main() {
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+
+	// This should be capped at 21, for the purpose of demonstration it is not
+	age_days := flag.Int("age", 21, "the maximum age (in days) to consider")
 	flag.Parse()
 
+	// This needs to broken into hours to work with the time library; it has no notion of days
+	age_hours := *age_days * 24
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err)
@@ -48,22 +53,25 @@ func main() {
 	}
 
 	// fmt.Println(masterMachine)
+	now := time.Now()
+	fmt.Println("Current Time:", now)
+
+	// Days needs to be in terms of miliseconds; to achieve this we multiply by the Hour constant
+	// which is the number of miliseconds in an hour
+	daysago := time.Duration(age_hours) * time.Hour
+	fmt.Printf("Age in hours: %f\n", daysago.Hours())
 
 	for _, machine := range masterMachine.Items {
-		fmt.Println(machine.Name)
-		now := time.Now()
-		// 504 hours is 21 days
-		// var daysago time.Duration = time.Duration(time.Duration.Hours(504))
-		daysago := 504 * time.Hour
-		fmt.Println(daysago.Hours())
+		fmt.Println("Machine: " + machine.Name)
 
-		fmt.Println("now:", now)
 		machineavailable := now.Sub(machine.GetCreationTimestamp().Time)
-		fmt.Println("TimemachineAvaialbe:", machineavailable)
+		fmt.Println("Time Available:", machineavailable)
 
 		if machineavailable > daysago {
-			fmt.Println("TimemachineAvaialbe is more than 21 days")
+			fmt.Printf("Time Available is more than %d days. This machine would be deleted.\n", *age_days)
 		}
+
+		fmt.Println()
 	}
 
 }
